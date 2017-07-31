@@ -31,18 +31,61 @@ def epsilon_greedy(epsilon):
 		n[I] += 1
 	return G, II
 
-def UBC1():
-	pass
+def UCB1():
+	mu_h = zeros(K) 	# Empirical mean
+	ucb = ones(K)		# Upper Confidence Bounds
+	n = zeros(K)		# Number of times an arm is pulled
+	G = zeros(N)		# Gain at round i
+	II = zeros(N)		# Choice of arm at round i
+	for i in xrange(N):
+		# Pull the arm with the highest bound
+		I = argmax(ucb)
+		g = pull_arm(I)
+		G[i] = g
+		II[i] = I
+		# Update the bound
+		n[I] += 1
+		mu_h[I] = (mu_h[I] * n[I] + g) / (n[I] + 1)
+		ucb[I] = mu_h[I] + sqrt((2*log(i+1)) / n[I])
+	return G, II
 
 def thompson_sampling():
-	pass
+	mu_h = zeros(K) 	# Empirical mean
+	ucb = ones(K)		# Upper Confidence Bounds
+	n = zeros(K)		# Number of times an arm is pulled
+	S = zeros(K)		# Number of success
+	F = zeros(K)		# Number of failure
+	G = zeros(N)		# Gain at round i
+	II = zeros(N)		# Choice of arm at round i
+	for i in xrange(N):
+		theta = zeros(K)
+		for j in xrange(K):
+			theta[j] = stats.beta(S[j]+1, F[j]+1).rvs()
+		I = argmax(theta)
+		g = pull_arm(I)
+		G[i] = g
+		II[i] = I
+		# Update the posterior using a Benourlli trial
+		if rand() < g:
+			S[I] += 1
+		else:
+			F[I] += 1
+	return G, II
 
 def main():
 	figure()
 	title('Average Gain Overtime')
-	for e in [0.01, 0.1, 0.5]:
+	# e-greedy
+	for e in [0.01, 0.1]:
 		G, II = epsilon_greedy(e)
-		plot(cumsum(G) / arange(1, N+1), label='e = %.3f'%(e))
+		# Could also add plot of % of optimal actions
+		plot(cumsum(G) / arange(1, N+1), label='EG w/ e = %.3f'%(e))
+	# UCB
+	G, II = UCB1()
+	plot(cumsum(G) / arange(1, N+1), label='UCB1')
+	# Thompson sampling
+	G, II = thompson_sampling()
+	plot(cumsum(G) / arange(1, N+1), label='TS')
 	legend()
 	show()
 
