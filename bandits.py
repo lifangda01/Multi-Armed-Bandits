@@ -72,11 +72,39 @@ def thompson_sampling():
 			F[I] += 1
 	return G, II
 
+def exp3(gamma):
+	w = ones(K) 		# Arm weights
+	n = zeros(K)		# Number of times an arm is pulled
+	G = zeros(N)		# Gain at round i
+	II = zeros(N)		# Choice of arm at round i
+	for i in xrange(N):
+		# Pull the arm with highest P
+		p = (1 - gamma) * w / sum(w) + gamma / K
+		I = choice(K, p=p)
+		g = pull_arm(I)
+		G[i] = g
+		II[i] = I
+		# Update the weight
+		w[I] = w[I] * exp(gamma * g / p[I] / K)
+	return G, II
+
+def random_bandit():
+	n = zeros(K)		# Number of times an arm is pulled
+	G = zeros(N)		# Gain at round i
+	II = zeros(N)		# Choice of arm at round i
+	for i in xrange(N):
+		# Pull the arm with highest P
+		I = randint(0, K)
+		g = pull_arm(I)
+		G[i] = g
+		II[i] = I
+	return G, II
+
 def main():
 	figure()
 	title('Average Gain Overtime')
 	# e-greedy
-	for e in [0.01, 0.1]:
+	for e in [0.05, 0.1]:
 		G, II = epsilon_greedy(e)
 		# Could also add plot of % of optimal actions
 		plot(cumsum(G) / arange(1, N+1), label='EG w/ e = %.3f'%(e))
@@ -86,7 +114,16 @@ def main():
 	# Thompson sampling
 	G, II = thompson_sampling()
 	plot(cumsum(G) / arange(1, N+1), label='TS')
+	# Exp3
+	for gamma in [0.2]:
+		G, II = exp3(gamma)
+		plot(cumsum(G) / arange(1, N+1), label='EXP3 w/ r = %.3f'%(gamma))
+	# Random bandit
+	G, II = random_bandit()
+	plot(cumsum(G) / arange(1, N+1), '--', label='Random')
 	legend()
+	xlabel('Round')
+	ylabel('Gain')
 	show()
 
 if __name__ == '__main__':
